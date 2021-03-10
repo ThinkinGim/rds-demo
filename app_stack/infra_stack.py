@@ -2,6 +2,8 @@ from aws_cdk import (
     core,
     aws_ec2,
     aws_rds,
+    aws_lambda,
+    aws_iam,
 )
 
 class InfraStack(core.Stack):
@@ -58,6 +60,53 @@ class InfraStack(core.Stack):
             vpc_subnets=aws_ec2.SubnetSelection(subnets=demo_subnets),
             security_groups=[db_security_group],
             iam_authentication=True
+        )
+
+        db_secret = mysql_instance.secret
+
+        role_init_db = aws_iam.Role(self, 'cmd_role_init_src_db',
+            assumed_by=aws_iam.ServicePrincipal("lambda.amazonaws.com")
+        )
+
+        role_init_db.add_to_policy(
+            aws_iam.PolicyStatement(
+                resources=['*'],
+                actions=[
+                    'logs:CreateLogGroup',
+                    'logs:CreateLogStream',
+                    'logs:PutLogEvents',
+                    "ec2:CreateNetworkInterface",
+                    "ec2:DescribeNetworkInterfaces",
+                    "ec2:DeleteNetworkInterface",
+                ]
+            )
+        )
+
+        role_init_db.add_to_policy(
+            aws_iam.PolicyStatement(
+                resources=[db_secret.secret_arn],
+                actions=[
+                    "secretsmanager:GetResourcePolicy",
+                    "secretsmanager:GetSecretValue",
+                    "secretsmanager:DescribeSecret",
+                    "secretsmanager:ListSecretVersionIds"
+                ]
+            )
+        )
+
+        func_init_db = aws_lambda.Function(self, 'func_init_db',
+            function_name='demo-rds_func_init_db',
+            handler='handler.init',
+            runtime=aws_lambda.Runtime.PYTHON_3_8,
+            code=aws_lambda.Code.asset('./app_stack/func_init_db'),
+            role=role_init_db,
+            timeout=core.Duration.seconds(900),
+            allow_public_subnet=False,
+            vpc=demo_vpc,
+            vpc_subnets=aws_ec2.SubnetSelection(subnets=demo_subnets),
+            environment={
+                'db_secret': db_secret.secret_name
+            }
         )
 
 
