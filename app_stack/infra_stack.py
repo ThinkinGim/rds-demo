@@ -105,7 +105,7 @@ class InfraStack(core.Stack):
             runtime=aws_lambda.Runtime.PYTHON_3_8,
             code=aws_lambda.Code.asset('./app_stack/func_init_db'),
             role=role_init_db,
-            timeout=core.Duration.seconds(900),
+            timeout=core.Duration.seconds(10),
             allow_public_subnet=False,
             vpc=demo_vpc,
             vpc_subnets=aws_ec2.SubnetSelection(subnets=demo_subnets),
@@ -113,6 +113,3 @@ class InfraStack(core.Stack):
                 'db_secret': db_secret.secret_name
             }
         )
-
-
-
