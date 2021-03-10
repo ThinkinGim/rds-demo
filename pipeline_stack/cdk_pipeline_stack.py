@@ -42,4 +42,15 @@ class CdkPipelineStack(core.Stack):
             )
         )
 
-        pipeline.add_application_stage(InfraStage(self, 'deploy'))
+        stage_deploy = pipeline.add_application_stage(InfraStage(self, 'deploy'))
+
+        stage_deploy.add_actions(
+            pipelines.ShellScriptAction(
+                action_name='InitDatabase',
+                run_order=stage_deploy.next_sequential_run_order(),
+                additional_artifacts=[source_artifact],
+                commands=[
+                    "aws lambda invoke --function-name demo-rds_func_init_db --log-type Tail --query 'StatusCode' --output json out.json",
+                ],
+            )
+        )
