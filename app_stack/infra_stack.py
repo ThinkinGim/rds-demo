@@ -73,19 +73,19 @@ class InfraStack(core.Stack):
             assumed_by=aws_iam.ServicePrincipal("lambda.amazonaws.com")
         )
 
-        role_init_db.add_to_policy(
-            aws_iam.PolicyStatement(
-                resources=['*'],
-                actions=[
-                    'logs:CreateLogGroup',
-                    'logs:CreateLogStream',
-                    'logs:PutLogEvents',
-                    "ec2:CreateNetworkInterface",
-                    "ec2:DescribeNetworkInterfaces",
-                    "ec2:DeleteNetworkInterface",
-                ]
-            )
+        lambda_base_policy_statement = aws_iam.PolicyStatement(
+            resources=['*'],
+            actions=[
+                'logs:CreateLogGroup',
+                'logs:CreateLogStream',
+                'logs:PutLogEvents',
+                "ec2:CreateNetworkInterface",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:DeleteNetworkInterface",
+            ]
         )
+
+        role_init_db.add_to_policy(lambda_base_policy_statement)
 
         role_init_db.add_to_policy(
             aws_iam.PolicyStatement(
@@ -99,6 +99,8 @@ class InfraStack(core.Stack):
             )
         )
 
+        db_user = 'db_test_user'
+
         func_init_db = aws_lambda.Function(self, 'func_init_db',
             function_name='demo-rds_func_init_db',
             handler='handler.init',
@@ -110,6 +112,51 @@ class InfraStack(core.Stack):
             vpc=demo_vpc,
             vpc_subnets=aws_ec2.SubnetSelection(subnets=demo_subnets),
             environment={
-                'db_secret': db_secret.secret_name
+                'db_secret': db_secret.secret_name,
+                'db_user': db_user
             }
         )
+
+        role_test_db = aws_iam.Role(self, 'demo_role_test_db',
+            assumed_by=aws_iam.ServicePrincipal("lambda.amazonaws.com"),
+            role_name=db_user
+        )
+        role_test_db.add_to_policy(lambda_base_policy_statement)
+        role_test_db.add_to_policy(
+            aws_iam.PolicyStatement(
+                resources=['*'],
+                actions=[
+                    "rds-db:connect",
+                ]
+            )
+        )
+
+        role_test_db.add_to_policy(
+            aws_iam.PolicyStatement(
+                resources=[db_secret.secret_arn],
+                actions=[
+                    "secretsmanager:GetResourcePolicy",
+                    "secretsmanager:GetSecretValue",
+                    "secretsmanager:DescribeSecret",
+                    "secretsmanager:ListSecretVersionIds"
+                ]
+            )
+        )
+
+        func_test_db = aws_lambda.Function(self, 'func_test_db',
+            function_name='demo-rds_func_test_db',
+            handler='handler.init',
+            runtime=aws_lambda.Runtime.PYTHON_3_8,
+            code=aws_lambda.Code.asset('./app_stack/func_test_db'),
+            role=role_test_db,
+            timeout=core.Duration.seconds(10),
+            allow_public_subnet=False,
+            vpc=demo_vpc,
+            vpc_subnets=aws_ec2.SubnetSelection(subnets=demo_subnets),
+            environment={
+                'db_secret': db_secret.secret_name,
+                'db_user': db_user
+            }
+        )
+
+

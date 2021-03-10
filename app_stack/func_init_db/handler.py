@@ -8,6 +8,7 @@ import os
 def init(event, context):
 
     db_secret_name = os.environ.get('db_secret')
+    db_user = os.environ.get('db_user')
 
     session = boto3.session.Session()
     client = session.client(service_name='secretsmanager')
@@ -30,10 +31,10 @@ def init(event, context):
             )
 
             cursor = conn.cursor()
-            cursor.execute("CREATE USER IF NOT EXISTS 'test_user'@'10.10.0.0/16' IDENTIFIED WITH AWSAuthenticationPlugin as 'RDS';")
+            cursor.execute("CREATE USER IF NOT EXISTS %s IDENTIFIED WITH AWSAuthenticationPlugin as 'RDS';"%db_user)
             conn.commit()
 
-            cursor.execute("select concat(user, ' has created with ', plugin, '.') from mysql.user where user='test_user';")
+            cursor.execute("select concat(user, ' has created with ', plugin, '.') from mysql.user where user='%s';"%db_user)
             result = cursor.fetchall()
             print(result)
 
