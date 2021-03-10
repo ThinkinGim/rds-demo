@@ -33,6 +33,11 @@ class InfraStack(core.Stack):
             )
         )
 
+        demo_vpc.add_interface_endpoint('secretmanager',
+            service=aws_ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+            subnets=aws_ec2.SubnetSelection(subnets=demo_subnets)
+        )
+
         db_subnet_group = aws_rds.SubnetGroup(self, 'sbng-demo-rds',
             description='demo db subnet group',
             vpc=demo_vpc,
