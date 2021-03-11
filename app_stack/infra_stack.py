@@ -117,6 +117,9 @@ class InfraStack(core.Stack):
             }
         )
 
+        # When the role_name specified as static value, it could be occurring with KMS related exception.
+        # It's because re-created lambda function with static name of role would be refer to the role which is not exsisted.
+        # https://github.com/serverless/examples/issues/279
         role_test_db = aws_iam.Role(self, 'demo_role_test_db',
             assumed_by=aws_iam.ServicePrincipal("lambda.amazonaws.com"),
             role_name=db_user
