@@ -147,7 +147,7 @@ class InfraStack(core.Stack):
         )
 
         func_test_db = aws_lambda.Function(self, 'func_test_db',
-            function_name='demo-rds_func_test_db',
+            function_name='demo-rds_test_iam_auth',
             handler='handler.init',
             runtime=aws_lambda.Runtime.PYTHON_3_8,
             code=aws_lambda.Code.asset('./app_stack/func_test_db'),
