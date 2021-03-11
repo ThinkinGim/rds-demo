@@ -6,6 +6,11 @@ from aws_cdk import (
     aws_iam,
 )
 
+import os
+
+REGION=os.environ["CDK_DEFAULT_REGION"]
+ACCOUNT=os.environ["CDK_DEFAULT_ACCOUNT"]
+
 class InfraStack(core.Stack):
 
     def __init__(self, scope: core.Construct, id: str, **kwargs) -> None:
@@ -127,7 +132,7 @@ class InfraStack(core.Stack):
         role_test_db.add_to_policy(lambda_base_policy_statement)
         role_test_db.add_to_policy(
             aws_iam.PolicyStatement(
-                resources=['*'],
+                resources=['arn:aws:rds-db:%s:%s:dbuser:*/*'%(REGION, ACCOUNT)],
                 actions=[
                     "rds-db:connect",
                 ]

@@ -32,6 +32,7 @@ def init(event, context):
 
             cursor = conn.cursor()
             cursor.execute("CREATE USER IF NOT EXISTS %s IDENTIFIED WITH AWSAuthenticationPlugin as 'RDS';"%db_user)
+            cursor.execute("grant select on mysql.* to '%s'@'%%';"%db_user)
             conn.commit()
 
             cursor.execute("select concat(user, ' has created with ', plugin, '.') from mysql.user where user='%s';"%db_user)
